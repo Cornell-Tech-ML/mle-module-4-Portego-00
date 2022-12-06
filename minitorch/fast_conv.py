@@ -82,7 +82,7 @@ def _tensor_conv1d(
     for b in prange(batch_):
         for o in prange(out_channels_):
             for j in prange(out_width):
-                final_value = 0.0
+                total_acc = float(0)
                 for c in prange(in_channels):
                     for w in prange(kw):
                         pos_w = o * s2[0] + c * s2[1] + w * s2[2]
@@ -99,11 +99,11 @@ def _tensor_conv1d(
                         input_index[2] = val
 
                         if input_index[2] < width and reverse is False:
-                            final_value += input[pos_in] * weight[pos_w]
+                            total_acc += input[pos_in] * weight[pos_w]
                         elif input_index[2] >= 0 and reverse is True:
-                            final_value += input[pos_in] * weight[pos_w]
+                            total_acc += input[pos_in] * weight[pos_w]
                 out_pos = b * out_strides[0] + o * out_strides[1] + j * out_strides[2]
-                out[out_pos] = final_value
+                out[out_pos] = total_acc
 
 
 tensor_conv1d = njit(parallel=True)(_tensor_conv1d)
@@ -239,7 +239,7 @@ def _tensor_conv2d(
                         + i3 * out_strides[2]
                         + i4 * out_strides[3]
                     )
-                    acc = 0.0
+                    total_acc = 0.0
                     for j in range(in_channels):
                         for h in range(kh):
                             for s in range(kw):
@@ -254,9 +254,11 @@ def _tensor_conv2d(
                                         weight_inner = (
                                             i2 * s20 + j * s21 + h * s22 + s * s23
                                         )
-                                        acc += input[input_inner] * weight[weight_inner]
+                                        total_acc += (
+                                            input[input_inner] * weight[weight_inner]
+                                        )
                                     else:
-                                        acc += 0
+                                        total_acc += 0
                                 else:
                                     if (i3 - h) >= 0 and (i4 - s) >= 0:
                                         input_inner = (
@@ -268,10 +270,12 @@ def _tensor_conv2d(
                                         weight_inner = (
                                             i2 * s20 + j * s21 + h * s22 + s * s23
                                         )
-                                        acc += input[input_inner] * weight[weight_inner]
+                                        total_acc += (
+                                            input[input_inner] * weight[weight_inner]
+                                        )
                                     else:
-                                        acc += 0
-                    out[out_position] = acc
+                                        total_acc += 0
+                    out[out_position] = total_acc
 
 
 tensor_conv2d = njit(parallel=True, fastmath=True)(_tensor_conv2d)
