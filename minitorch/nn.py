@@ -86,7 +86,7 @@ class Max(Function):
         "Backward of max should be argmax (see above)"
         # TODO: Implement for Task 4.4.
         input, dim = ctx.saved_values
-        return (argmax(input, dim) * grad_output, grad_output)
+        return (argmax(input, int(dim.item())) * grad_output, dim)
 
 
 def max(input: Tensor, dim: int) -> Tensor:

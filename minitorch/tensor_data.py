@@ -95,6 +95,7 @@ def broadcast_index(
             out_index[index] = big_index[index + len(big_shape) - len(shape)]
         else:
             out_index[index] = 0
+    return None
 
 
 def shape_broadcast(shape1: UserShape, shape2: UserShape) -> UserShape:

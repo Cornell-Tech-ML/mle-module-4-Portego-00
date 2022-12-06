@@ -149,6 +149,7 @@ class ImageTrain:
 
                 # Update
                 optim.step()
+                optim.zero_grad()
 
                 if batch_num % 5 == 0:
                     model.eval()

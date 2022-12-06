@@ -68,8 +68,6 @@ class FastOps(TensorOps):
         f = tensor_reduce(njit()(fn))
 
         def ret(a: Tensor, dim: int) -> Tensor:
-            if "Tensor" in str(type(dim)):
-                dim = int(dim[0])
             out_shape = list(a.shape)
             out_shape[dim] = 1
 
