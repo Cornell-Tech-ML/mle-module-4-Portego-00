@@ -68,11 +68,11 @@ class FastOps(TensorOps):
         f = tensor_reduce(njit()(fn))
 
         def ret(a: Tensor, dim: int) -> Tensor:
+            if "Tensor" in str(type(dim)):
+                dim = int(dim[0])
             out_shape = list(a.shape)
-            dim = int(dim[0])
             out_shape[dim] = 1
 
-            # Other values when not sum.
             out = a.zeros(tuple(out_shape))
             out._tensor._storage[:] = start
 
@@ -166,7 +166,11 @@ def tensor_map(
         in_len = len(in_shape)
         # out_index = np.full(out_len, -1)
         # in_index = np.full(in_len, -1)
-        if ((len(in_shape) == len(out_shape)) and (in_shape == out_shape).all() and (in_strides == out_strides).all()):
+        if (
+            (len(in_shape) == len(out_shape))
+            and (in_shape == out_shape).all()
+            and (in_strides == out_strides).all()
+        ):
             for i in prange(len(out)):
                 out[i] = fn(in_storage[i])
         else:
@@ -182,8 +186,9 @@ def tensor_map(
                 # Finding the out_storage position from the out_index
                 # Throwing it in storage
                 out[i] = fn(in_storage[in_pos])
+
     # return _map
-# raise NotImplementedError("Need to implement for Task 3.1")
+    # raise NotImplementedError("Need to implement for Task 3.1")
     return njit(parallel=True)(_map)  # type: ignore
 
 
@@ -225,7 +230,12 @@ def tensor_zip(
         out_len = len(out_shape)
         a_len = len(a_shape)
         b_len = len(b_shape)
-        if ((a_len == b_len) and (a_strides == b_strides).all() and (a_shape == b_shape).all() and (b_strides == out_strides).all()):
+        if (
+            (a_len == b_len)
+            and (a_strides == b_strides).all()
+            and (a_shape == b_shape).all()
+            and (b_strides == out_strides).all()
+        ):
             for i in prange(out_size):
                 out[i] = fn(a_storage[i], b_storage[i])
         else:
@@ -244,12 +254,12 @@ def tensor_zip(
                 # Finding the b_storage position from the b_index
                 b_pos = index_to_position(b_index, b_strides)
                 # Finding the out_storage position from the out_index
-                #out_pos = index_to_position(out_index, out_strides)
+                # out_pos = index_to_position(out_index, out_strides)
                 # Throwing it in storage
                 out[i] = fn(a_storage[a_pos], b_storage[b_pos])
 
     # return _zip
-# raise NotImplementedError("Need to implement for Task 3.1")
+    # raise NotImplementedError("Need to implement for Task 3.1")
     return njit(parallel=True)(_zip)  # type: ignore
 
 
@@ -293,7 +303,7 @@ def tensor_reduce(
                 out[o] = fn(out[o], a_storage[j])
 
     # return _reduce
-# raise NotImplementedError("Need to implement for Task 3.1")
+    # raise NotImplementedError("Need to implement for Task 3.1")
     return njit(parallel=True)(_reduce)  # type: ignore
 
 

@@ -5,9 +5,7 @@ from numba import njit, prange
 
 from .autodiff import Context
 from .tensor import Tensor
-from .tensor_data import (
-    MAX_DIMS,
-    Index,
+from .tensor_data import (  # MAX_DIMS,; Index,
     Shape,
     Strides,
     broadcast_index,
@@ -87,9 +85,7 @@ def _tensor_conv1d(
                 final_value = 0.0
                 for c in prange(in_channels):
                     for w in prange(kw):
-                        pos_w = (
-                            o * s2[0] + c * s2[1] + w * s2[2]
-                        )
+                        pos_w = o * s2[0] + c * s2[1] + w * s2[2]
                         input_index = np.zeros(3, np.int16)
                         if reverse is False:
                             pos_in = b * s1[0] + c * s1[1] + j * s1[2] + w * s1[2]
@@ -101,13 +97,14 @@ def _tensor_conv1d(
                         input_index[0] = b
                         input_index[1] = c
                         input_index[2] = val
-        
+
                         if input_index[2] < width and reverse is False:
                             final_value += input[pos_in] * weight[pos_w]
                         elif input_index[2] >= 0 and reverse is True:
                             final_value += input[pos_in] * weight[pos_w]
                 out_pos = b * out_strides[0] + o * out_strides[1] + j * out_strides[2]
                 out[out_pos] = final_value
+
 
 tensor_conv1d = njit(parallel=True)(_tensor_conv1d)
 
@@ -236,22 +233,41 @@ def _tensor_conv2d(
         for i2 in prange(out_channels):
             for i3 in prange(out_shape[2]):
                 for i4 in prange(out_shape[3]):
-                    out_position = i1 * out_strides[0] + i2 * out_strides[1] + i3 * out_strides[2] + i4 * out_strides[3]
+                    out_position = (
+                        i1 * out_strides[0]
+                        + i2 * out_strides[1]
+                        + i3 * out_strides[2]
+                        + i4 * out_strides[3]
+                    )
                     acc = 0.0
                     for j in range(in_channels):
                         for h in range(kh):
                             for s in range(kw):
                                 if not reverse:
                                     if (i3 + h) < height and (i4 + s) < width:
-                                        input_inner = i1 * input_strides[0] + j * input_strides[1] + (i3 + h) * input_strides[2] + (i4 + s) * input_strides[3]
-                                        weight_inner = i2 * weight_strides[0] + j * weight_strides[1] + h * weight_strides[2] + s * weight_strides[3]
+                                        input_inner = (
+                                            i1 * s10
+                                            + j * s11
+                                            + (i3 + h) * s12
+                                            + (i4 + s) * s13
+                                        )
+                                        weight_inner = (
+                                            i2 * s20 + j * s21 + h * s22 + s * s23
+                                        )
                                         acc += input[input_inner] * weight[weight_inner]
                                     else:
                                         acc += 0
                                 else:
                                     if (i3 - h) >= 0 and (i4 - s) >= 0:
-                                        input_inner = i1 * input_strides[0] + j * input_strides[1] + (i3 - h) * input_strides[2] + (i4 - s) * input_strides[3]
-                                        weight_inner = i2 * weight_strides[0] + j * weight_strides[1] + h * weight_strides[2] + s * weight_strides[3]
+                                        input_inner = (
+                                            i1 * s10
+                                            + j * s11
+                                            + (i3 - h) * s12
+                                            + (i4 - s) * s13
+                                        )
+                                        weight_inner = (
+                                            i2 * s20 + j * s21 + h * s22 + s * s23
+                                        )
                                         acc += input[input_inner] * weight[weight_inner]
                                     else:
                                         acc += 0

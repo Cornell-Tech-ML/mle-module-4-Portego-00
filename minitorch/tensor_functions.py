@@ -4,8 +4,6 @@ Implementation of the autodifferentiation Functions for Tensor.
 
 from __future__ import annotations
 
-# from queue import Empty
-
 import random
 from typing import TYPE_CHECKING
 
@@ -101,87 +99,77 @@ class Add(Function):
 class Mul(Function):
     @staticmethod
     def forward(ctx: Context, a: Tensor, b: Tensor) -> Tensor:
-        # TODO: Implement for Task 2.3.
         ctx.save_for_backward(a, b)
         return a.f.mul_zip(a, b)
-        raise NotImplementedError("Need to implement for Task 2.3")
+        # raise NotImplementedError("Need to include this file from past assignment.")
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, Tensor]:
-        # TODO: Implement for Task 2.4.
-        (a, b) = ctx.saved_values
-        return (b * grad_output, a * grad_output)
-        raise NotImplementedError("Need to implement for Task 2.4")
+        a, b = ctx.saved_values
+        return (
+            grad_output.f.mul_zip(b, grad_output),
+            grad_output.f.mul_zip(a, grad_output),
+        )
+        # raise NotImplementedError("Need to include this file from past assignment.")
 
 
 class Sigmoid(Function):
     @staticmethod
     def forward(ctx: Context, t1: Tensor) -> Tensor:
-        # TODO: Implement for Task 2.3.
-        ctx.save_for_backward(t1.f.sigmoid_map(t1))
-        return t1.f.sigmoid_map(t1)
-        raise NotImplementedError("Need to implement for Task 2.3")
+        out = t1.f.sigmoid_map(t1)
+        ctx.save_for_backward(out)
+        return out
+        # raise NotImplementedError("Need to include this file from past assignment.")
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tensor:
-        # TODO: Implement for Task 2.4.
-        (sigmas,) = ctx.saved_values
-        return grad_output.f.mul_zip(
-            sigmas,
-            grad_output.f.mul_zip(
-                (grad_output.f.add_zip(tensor([1.0]), grad_output.f.neg_map(sigmas))),
-                grad_output,
-            ),
-        )
-        raise NotImplementedError("Need to implement for Task 2.4")
+        sigma: Tensor = ctx.saved_values[0]
+        return sigma * (-sigma + 1.0) * grad_output
+        # raise NotImplementedError("Need to include this file from past assignment.")
 
 
 class ReLU(Function):
     @staticmethod
     def forward(ctx: Context, t1: Tensor) -> Tensor:
-        # TODO: Implement for Task 2.3.
         ctx.save_for_backward(t1)
         return t1.f.relu_map(t1)
-        raise NotImplementedError("Need to implement for Task 2.3")
+        # raise NotImplementedError("Need to include this file from past assignment.")
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tensor:
-        # TODO: Implement for Task 2.4.
         (a,) = ctx.saved_values
         return grad_output.f.relu_back_zip(a, grad_output)
-        raise NotImplementedError("Need to implement for Task 2.4")
+        # raise NotImplementedError("Need to include this file from past assignment.")
 
 
 class Log(Function):
     @staticmethod
     def forward(ctx: Context, t1: Tensor) -> Tensor:
-        # TODO: Implement for Task 2.3.
         ctx.save_for_backward(t1)
-        return t1.f.log_map(t1)
-        raise NotImplementedError("Need to implement for Task 2.3")
+        out = t1.f.log_map(t1)
+        return out
+        # raise NotImplementedError("Need to include this file from past assignment.")
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tensor:
-        # TODO: Implement for Task 2.4.
         (a,) = ctx.saved_values
         return grad_output.f.log_back_zip(a, grad_output)
-        raise NotImplementedError("Need to implement for Task 2.4")
+        # raise NotImplementedError("Need to include this file from past assignment.")
 
 
 class Exp(Function):
     @staticmethod
     def forward(ctx: Context, t1: Tensor) -> Tensor:
-        # TODO: Implement for Task 2.3.
-        ctx.save_for_backward(t1)
-        return t1.f.exp_map(t1)
-        raise NotImplementedError("Need to implement for Task 2.3")
+        out = t1.f.exp_map(t1)
+        ctx.save_for_backward(out)
+        return out
+        # raise NotImplementedError("Need to include this file from past assignment.")
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tensor:
-        # TODO: Implement for Task 2.4.
         (a,) = ctx.saved_values
-        return grad_output.f.exp_map(a, grad_output)
-        raise NotImplementedError("Need to implement for Task 2.4")
+        return grad_output.f.mul_zip(a, grad_output)
+        # raise NotImplementedError("Need to include this file from past assignment.")
 
 
 class Sum(Function):
@@ -208,59 +196,56 @@ class All(Function):
 class LT(Function):
     @staticmethod
     def forward(ctx: Context, a: Tensor, b: Tensor) -> Tensor:
-        # TODO: Implement for Task 2.3.
+        ctx.save_for_backward(a.shape, b.shape)
         return a.f.lt_zip(a, b)
-        raise NotImplementedError("Need to implement for Task 2.3")
+        # raise NotImplementedError("Need to include this file from past assignment.")
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, Tensor]:
-        # TODO: Implement for Task 2.4.
-        return (tensor([0.0]), tensor([0.0]))
-        raise NotImplementedError("Need to implement for Task 2.4")
+        a_shape, b_shape = ctx.saved_values
+        return zeros(a_shape), zeros(b_shape)
+        # raise NotImplementedError("Need to include this file from past assignment.")
 
 
 class EQ(Function):
     @staticmethod
     def forward(ctx: Context, a: Tensor, b: Tensor) -> Tensor:
-        # TODO: Implement for Task 2.3.
+        ctx.save_for_backward(a.shape, b.shape)
         return a.f.eq_zip(a, b)
-        raise NotImplementedError("Need to implement for Task 2.3")
+        # raise NotImplementedError("Need to include this file from past assignment.")
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, Tensor]:
-        # TODO: Implement for Task 2.4.
-        return (tensor([0.0]), tensor([0.0]))
-        raise NotImplementedError("Need to implement for Task 2.4")
+        a_shape, b_shape = ctx.saved_values
+        return zeros(a_shape), zeros(b_shape)
+        # raise NotImplementedError("Need to include this file from past assignment.")
 
 
 class IsClose(Function):
     @staticmethod
     def forward(ctx: Context, a: Tensor, b: Tensor) -> Tensor:
-        # TODO: Implement for Task 2.3.
         return a.f.is_close_zip(a, b)
-        raise NotImplementedError("Need to implement for Task 2.3")
+        # raise NotImplementedError("Need to include this file from past assignment.")
 
 
 class Permute(Function):
     @staticmethod
     def forward(ctx: Context, a: Tensor, order: Tensor) -> Tensor:
-        # TODO: Implement for Task 2.3.
         ctx.save_for_backward(order)
-        newTensor = a._tensor.permute(*list(order.to_numpy()))
-        return _tensor(newTensor._storage, newTensor.shape)
-        raise NotImplementedError("Need to implement for Task 2.3")
+        return a._new(a._tensor.permute(*[int(order[i]) for i in range(order.size)]))
+        # raise NotImplementedError("Need to include this file from past assignment.")
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, float]:
-        # TODO: Implement for Task 2.4.
-        (order,) = ctx.saved_values
-        order = order.to_numpy()
-        newOrder = [0] * len(order)
-        for i in range(len(order)):
-            newOrder[int(order[i])] = i
-        newTensor = grad_output._tensor.permute(*newOrder)
-        return _tensor(newTensor._storage, newTensor.shape), 0.0
-        raise NotImplementedError("Need to implement for Task 2.4")
+        order: Tensor = ctx.saved_values[0]
+        order2: List[int] = [
+            a[0]
+            for a in sorted(
+                enumerate([order[i] for i in range(order.size)]), key=lambda a: a[1]
+            )
+        ]
+        return grad_output._new(grad_output._tensor.permute(*order2)), 0.0
+        # raise NotImplementedError("Need to include this file from past assignment.")
 
 
 class View(Function):

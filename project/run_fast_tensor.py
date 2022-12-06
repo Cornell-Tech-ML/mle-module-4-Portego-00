@@ -1,4 +1,5 @@
-import random, time
+import random
+import time
 
 import numba
 
@@ -9,7 +10,7 @@ FastTensorBackend = minitorch.TensorBackend(minitorch.FastOps)
 print(numba.cuda.is_available())
 if numba.cuda.is_available():
     GPUBackend = minitorch.TensorBackend(minitorch.CudaOps)
-    print('using gpu')
+    print("using gpu")
 
 
 def default_log_fn(epoch, total_loss, correct, losses):
@@ -115,7 +116,9 @@ class FastTrain:
                 y2 = minitorch.tensor(data.y)
                 correct = int(((out.detach() > 0.5) == y2).sum()[0])
                 log_fn(epoch, total_loss, correct, losses)
-        print(f"Average time per epoch {total_epoch_time/max_epochs} (for {max_epochs} epochs)")
+        print(
+            f"Average time per epoch {total_epoch_time/max_epochs} (for {max_epochs} epochs)"
+        )
 
 
 if __name__ == "__main__":
