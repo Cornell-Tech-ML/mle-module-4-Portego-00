@@ -153,7 +153,14 @@ def tensor_map(
         out_index = cuda.local.array(MAX_DIMS, numba.int32)
         in_index = cuda.local.array(MAX_DIMS, numba.int32)
         i = cuda.blockIdx.x * cuda.blockDim.x + cuda.threadIdx.x
-        raise NotImplementedError("Need to include this file from past assignment.")
+        # TODO: Implement for Task 3.3.
+        if i < out_size:
+            to_index(i, out_shape, out_index)
+            a = index_to_position(out_index, out_strides)
+            broadcast_index(out_index, out_shape, in_shape, in_index)
+            b = index_to_position(in_index, in_strides)
+            out[a] = fn(in_storage[b])
+        # raise NotImplementedError("Need to implement for Task 3.3")
 
     return cuda.jit()(_map)  # type: ignore
 
@@ -194,7 +201,17 @@ def tensor_zip(
         b_index = cuda.local.array(MAX_DIMS, numba.int32)
         i = cuda.blockIdx.x * cuda.blockDim.x + cuda.threadIdx.x
 
-        raise NotImplementedError("Need to include this file from past assignment.")
+        # TODO: Implement for Task 3.3.
+
+        if i < out_size:
+            to_index(i, out_shape, out_index)
+            x = index_to_position(out_index, out_strides)
+            broadcast_index(out_index, out_shape, a_shape, a_index)
+            a = index_to_position(a_index, a_strides)
+            broadcast_index(out_index, out_shape, b_shape, b_index)
+            b = index_to_position(b_index, b_strides)
+            out[x] = fn(a_storage[a], b_storage[b])
+        # raise NotImplementedError("Need to implement for Task 3.3")
 
     return cuda.jit()(_zip)  # type: ignore
 
@@ -226,7 +243,24 @@ def _sum_practice(out: Storage, a: Storage, size: int) -> None:
     i = cuda.blockIdx.x * cuda.blockDim.x + cuda.threadIdx.x
     pos = cuda.threadIdx.x
 
-    raise NotImplementedError("Need to include this file from past assignment.")
+    # TODO: Implement for Task 3.3.
+    if i >= size:
+        cache[pos] = 0
+    else:
+        cache[pos] = a[i]
+    cuda.syncthreads()
+
+    if i < size:
+        z = 2
+        for _ in range(5):
+            if (pos % z) == 0:
+                cache[pos] += cache[pos + int(z / 2)]
+                cuda.syncthreads()
+            z *= 2
+        if pos == 0:
+            y = cuda.blockIdx.x
+            out[y] = cache[0]
+    # raise NotImplementedError("Need to implement for Task 3.3")
 
 
 jit_sum_practice = cuda.jit()(_sum_practice)
@@ -273,9 +307,32 @@ def tensor_reduce(
         cache = cuda.shared.array(BLOCK_DIM, numba.float64)
         out_index = cuda.local.array(MAX_DIMS, numba.int32)
         out_pos = cuda.blockIdx.x
-        pos = cuda.threadIdx.x
+        chache_pos = cuda.threadIdx.x
+        cache[chache_pos] = reduce_value
 
-        raise NotImplementedError("Need to include this file from past assignment.")
+        # TODO: Implement for Task 3.3.
+        if out_pos < out_size:
+            # calculate the out position
+            to_index(out_pos, out_shape, out_index)
+            b = index_to_position(out_index, out_strides)
+            new_o = chache_pos + out_index[reduce_dim] * BLOCK_DIM
+            out_index[reduce_dim] = new_o
+            if new_o < a_shape[reduce_dim]:
+                c = index_to_position(out_index, a_strides)
+                cache[chache_pos] = a_storage[c]
+                cuda.syncthreads()
+
+                off = 1
+                while off < BLOCK_DIM:
+                    if chache_pos % (off * 2) == 0:
+                        cache[chache_pos] = fn(
+                            cache[chache_pos], cache[chache_pos + off]
+                        )
+                        cuda.syncthreads()
+                    off = off * 2
+            if chache_pos == 0:
+                out[b] = cache[0]
+        # raise NotImplementedError("Need to implement for Task 3.3")
 
     return cuda.jit()(_reduce)  # type: ignore
 
@@ -311,7 +368,21 @@ def _mm_practice(out: Storage, a: Storage, b: Storage, size: int) -> None:
         size (int): size of the square
     """
     BLOCK_DIM = 32
-    raise NotImplementedError("Need to include this file from past assignment.")
+    # TODO: Implement for Task 3.3.
+    shared_a = cuda.shared.array((BLOCK_DIM, BLOCK_DIM), numba.float64)
+    shared_b = cuda.shared.array((BLOCK_DIM, BLOCK_DIM), numba.float64)
+
+    x_val = cuda.threadIdx.x
+    y_val = cuda.threadIdx.y
+    if x_val < size and y_val < size:
+        shared_a[x_val, y_val] = a[size * x_val + y_val]
+        shared_b[x_val, y_val] = b[size * x_val + y_val]
+        cuda.syncthreads()
+        output = 0.0
+        for i in range(size):
+            output += shared_a[x_val, i] * shared_b[i, y_val]
+        out[size * x_val + y_val] = output
+    # raise NotImplementedError("Need to implement for Task 3.3")
 
 
 jit_mm_practice = cuda.jit()(_mm_practice)
@@ -380,7 +451,34 @@ def _tensor_matrix_multiply(
     #    a) Copy into shared memory for a matrix.
     #    b) Copy into shared memory for b matrix
     #    c) Compute the dot produce for position c[i, j]
-    raise NotImplementedError("Need to include this file from past assignment.")
+    # TODO: Implement for Task 3.4.
+    dim_shared = a_shape[2]
+    tot = float(0)
+    # Move the data into shared memory
+    for block_s in range(0, dim_shared, BLOCK_DIM):
+        ka = block_s + pj
+        # Copy data into shared memory for matrix a
+        if i < a_shape[1] and ka < a_shape[2]:
+            a_i = (a_strides[1] * i) + (a_strides[2] * ka) + (batch * a_batch_stride)
+            # Read through each cell in a and b once
+            a_shared[pi, pj] = a_storage[a_i]
+            # Copy data into shared memory for matrix b
+        kb = block_s + pi
+        if kb < b_shape[1] and j < b_shape[2]:
+            b_i = (b_strides[1] * kb) + (b_strides[2] * j) + (batch * b_batch_stride)
+            # Read through each cell in a and b once
+            b_shared[pi, pj] = b_storage[b_i]
+        # Synchronize the threads
+        cuda.syncthreads()
+        # Dot product for c[i, j]
+        for k in range(0, BLOCK_DIM):
+            if (k + block_s) < a_shape[2]:
+                tot += a_shared[pi, k] * b_shared[k, pj]
+    #  Write to the output and only write to global memory once per kernel
+    if i < out_shape[1] and j < out_shape[2]:
+        o_i = (out_strides[1] * i) + (out_strides[2] * j) + (out_strides[0] * batch)
+        out[o_i] = tot
+    # raise NotImplementedError("Need to implement for Task 3.4")
 
 
 tensor_matrix_multiply = cuda.jit(_tensor_matrix_multiply)
